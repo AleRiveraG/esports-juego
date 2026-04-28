@@ -1,30 +1,32 @@
 package com.juego.microservicio_juego.model;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Entity
+@Table(name = "juego")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class Juego {
 
-    @NotNull(message = "El id no puede ser nulo")
-    @Positive(message = "El id tiene que ser mayor a 0")
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false, length = 5)
     private Long idJuego;
 
-    @NotBlank(message = "El nombre no puede ser vacio ni nulo")
+    @Column(nullable = false, length = 100)
     private String nombre;
 
-    @NotBlank(message = "El genero no puede ser vacio ni nulo")
+    @Column(nullable = false, length = 100)
     private String genero;
 
+    @Column(nullable = true, length = 100)
     private String distribuidor;
 
-    @NotBlank(message = "La plataforma no puede ser vacia ni nulo")
+    @Column(nullable = false, length = 255)
     private String plataformas;
 
 }
