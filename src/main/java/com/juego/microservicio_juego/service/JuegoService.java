@@ -39,9 +39,9 @@ public class JuegoService {
         return juegoRepository.findById(id).map(this::mapToDTO);
     }
 
-    public Juego agregarJuego(JuegoRequestDTO dto){
+    public JuegoResponseDTO agregarJuego(JuegoRequestDTO dto){
         Juego juego = new Juego(null, dto.getNombre(), dto.getGenero(), dto.getDistribuidor(), dto.getPlataformas());
-        return juegoRepository.save(juego);
+        return mapToDTO(juegoRepository.save(juego));
     }
 
     public Optional<JuegoResponseDTO> modificarJuego(Long id, JuegoRequestDTO dto){

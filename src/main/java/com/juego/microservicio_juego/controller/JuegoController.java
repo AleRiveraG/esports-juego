@@ -1,31 +1,34 @@
 package com.juego.microservicio_juego.controller;
 
+import com.juego.microservicio_juego.dto.JuegoRequestDTO;
+import com.juego.microservicio_juego.dto.JuegoResponseDTO;
 import com.juego.microservicio_juego.model.Juego;
 import com.juego.microservicio_juego.service.JuegoService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/juego")
 public class JuegoController {
 
-    @Autowired
-    private JuegoService juegoService;
+    private final JuegoService juegoService;
 
     @GetMapping
-    public List<Juego> listarJuego(){
+    public List<JuegoResponseDTO> listarJuego(){
         return juegoService.obtenerJuegos();
     }
 
     @PostMapping
-    public Juego guardarJuego(@RequestBody Juego juego){
-        return juegoService.guardarJuego(juego);
+    public JuegoResponseDTO guardarJuego(@RequestBody JuegoRequestDTO juego){
+        return juegoService.agregarJuego(juego);
     }
 
     @PutMapping("{id}")
-    public Juego modificarJuego(@PathVariable Long id, @RequestBody Juego juego){
+    public Optional<JuegoResponseDTO> modificarJuego(@PathVariable Long id, @RequestBody JuegoRequestDTO juego){
         return juegoService.modificarJuego(id, juego);
     }
 
