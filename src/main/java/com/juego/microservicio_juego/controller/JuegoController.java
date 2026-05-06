@@ -2,7 +2,6 @@ package com.juego.microservicio_juego.controller;
 
 import com.juego.microservicio_juego.dto.JuegoRequestDTO;
 import com.juego.microservicio_juego.dto.JuegoResponseDTO;
-import com.juego.microservicio_juego.model.Juego;
 import com.juego.microservicio_juego.service.JuegoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

@@ -19,5 +19,5 @@ public class JuegoRequestDTO {
     private String distribuidor;
 
     @NotBlank(message = "La plataforma no puede ser vacio ni nulo")
-    private String plataformas;
+    private Long idPlataforma;
 }

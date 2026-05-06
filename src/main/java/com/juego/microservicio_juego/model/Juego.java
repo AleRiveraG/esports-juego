@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Entity
 @Table(name = "juego")
 @Data
@@ -26,7 +28,10 @@ public class Juego {
     @Column(nullable = true, length = 100)
     private String distribuidor;
 
-    @Column(nullable = false, length = 255)
-    private String plataformas;
+    @ManyToMany
+    @JoinTable(name = "juego_plataforma")
+    private Set<Plataforma> plataformas;
+
+
 
 }
