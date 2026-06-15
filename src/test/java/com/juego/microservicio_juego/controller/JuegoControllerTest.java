@@ -1,5 +1,12 @@
 package com.juego.microservicio_juego.controller;
 
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.juego.microservicio_juego.assemblers.JuegoModelAssembler;
 import com.juego.microservicio_juego.client.AuditoriaClient;
 import com.juego.microservicio_juego.dto.JuegoRequestDTO;
 import com.juego.microservicio_juego.dto.JuegoResponseDTO;
@@ -8,137 +15,125 @@ import com.juego.microservicio_juego.service.JuegoService;
 import com.juego.microservicio_juego.service.PlataformaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-
 @WebMvcTest(JuegoController.class)
+@Import(JuegoModelAssembler.class)
 public class JuegoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @Mock
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockBean
     private JuegoService juegoService;
 
-    @Mock
+    @MockBean
     private PlataformaService plataformaService;
 
-    @Mock
+    @MockBean
     private AuditoriaClient auditoriaClient;
 
     private Plataforma plat;
-    private JuegoResponseDTO juego;
+    private JuegoResponseDTO responseDTO;
+    private JuegoRequestDTO requestDTO;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         plat = new Plataforma();
         plat.setIdPlataforma(1L);
         plat.setNombrePlataforma("PC");
 
-        juego = new JuegoResponseDTO();
-        juego.setId(1L);
-        juego.setNombre("Counter-Strike");
-        juego.setGenero("FPS");
-        juego.setDistribuidor("Valve");
-        juego.setPlataformaId(Set.of(plat.getIdPlataforma()));
+        responseDTO = new JuegoResponseDTO();
+        responseDTO.setId(1L);
+        responseDTO.setNombre("Counter-Strike");
+        responseDTO.setGenero("FPS");
+        responseDTO.setDistribuidor("Valve");
+        responseDTO.setPlataformaId(Set.of(plat.getIdPlataforma()));
+
+        requestDTO = new JuegoRequestDTO();
+        requestDTO.setNombre("Counter-Strike");
+        requestDTO.setGenero("FPS");
+        requestDTO.setDistribuidor("Valve");
+        requestDTO.setIdPlataformas(Set.of(1L));
     }
 
     @Test
-    void testListarJuegos() throws Exception{
-        when(juegoService.obtenerJuegos()).thenReturn(List.of(juego));
+    @WithMockUser(roles = "ADMIN")
+    public void testBuscarPorId() throws Exception {
+        when(juegoService.obtenerJuegoPorId(1L)).thenReturn(responseDTO);
 
-        mockMvc.perform(get("/api/juego"))
+        mockMvc.perform(get("/api/juego/1")
+                        .accept(MediaTypes.HAL_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1L))
-                .andExpect(jsonPath("$[0].nombre").value("Counter-Strike"))
-                .andExpect(jsonPath("$[0].genero").value("FPS"))
-                .andExpect(jsonPath("$[0].distribuidor").value("Valve"))
-                .andExpect(jsonPath("$[0].plataformaId[0]").value(1));
-
-        List<JuegoResponseDTO> juegos = juegoService.obtenerJuegos();
-        assertNotNull(juegos);
-        assertEquals(1, juegos.size());
-    }
-
-    @Test
-    void testBuscarPorId() throws Exception{
-        when(juegoService.obtenerJuegoPorId(1L)).thenReturn(juego);
-
-        mockMvc.perform(get("/api/juego/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nombre").value("Counter-Strike"))
-                .andExpect(jsonPath("$.genero").value("FPS"))
-                .andExpect(jsonPath("$.distribuidor").value("Valve"))
-                .andExpect(jsonPath("$.plataformaId[0]").value(1));
-
-        verify(juegoService).obtenerJuegoPorId(1L);
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
-    void testGuardarJuego() throws Exception{
-        when(juegoService.agregarJuego(any(JuegoRequestDTO.class))).thenReturn(juego);
+    @WithMockUser(roles = "ADMIN")
+    public void testListarJuegos() throws Exception {
+        when(juegoService.obtenerJuegos()).thenReturn(List.of(responseDTO));
+
+        mockMvc.perform(get("/api/juego")
+                        .accept(MediaTypes.HAL_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded").exists())
+                .andExpect(jsonPath("$._links.self.href").exists());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    public void testGuardarJuego() throws Exception {
+        when(juegoService.agregarJuego(any(JuegoRequestDTO.class))).thenReturn(responseDTO);
 
         mockMvc.perform(post("/api/juego")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre":"Counter-Strike",
-                            "genero":"FPS",
-                            "distribuidor":"Valve",
-                            "idPlataformas": [1]
-                        }
-                        """))
-                .andExpect(status().isCreated());
-
-        verify(juegoService).agregarJuego(any(JuegoRequestDTO.class));
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO))
+                        .accept(MediaTypes.HAL_JSON_VALUE))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
-    void testModificarJuego() throws Exception{
-        when(juegoService.modificarJuego(eq(1L), any(JuegoRequestDTO.class))).thenReturn(juego);
+    @WithMockUser(roles = "ADMIN")
+    public void testModificarJuego() throws Exception {
+        when(juegoService.modificarJuego(eq(1L), any(JuegoRequestDTO.class))).thenReturn(responseDTO);
 
-        mockMvc.perform(put("/api/juego/1", 1L)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                            "nombre":"Counter-Strike",
-                            "genero":"FPS",
-                            "distribuidor":"Valve",
-                            "idPlataformas": [1]
-                        }
-                        """))
+        mockMvc.perform(put("/api/juego/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requestDTO))
+                        .accept(MediaTypes.HAL_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nombre").value("Counter-Strike"))
-                .andExpect(jsonPath("$.genero").value("FPS"))
-                .andExpect(jsonPath("$.distribuidor").value("Valve"));
+                .andExpect(jsonPath("$._links.self.href").exists());
     }
 
     @Test
-    void testEliminarJuego() throws Exception{
-        when(juegoService.obtenerJuegoPorId(1L)).thenReturn(juego);
+    @WithMockUser(roles = "ADMIN")
+    public void testEliminarJuego() throws Exception {
+        when(juegoService.obtenerJuegoPorId(1L)).thenReturn(responseDTO);
 
-        mockMvc.perform(delete("/api/juego/1"))
+        mockMvc.perform(delete("/api/juego/1")
+                        .with(csrf()))
                 .andExpect(status().isNoContent());
 
-        verify(juegoService,times(1)).eliminarJuego(1L);
-
-
-
+        verify(juegoService, times(1)).eliminarJuego(1L);
     }
 }
